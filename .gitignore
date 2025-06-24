@@ -3,3 +3,4 @@
 .txt
 .python-version
 *.csv
+__pycache__/
