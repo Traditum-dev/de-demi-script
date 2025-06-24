@@ -1,0 +1,5 @@
+*.ipynb
+.env
+.txt
+.python-version
+*.csv
