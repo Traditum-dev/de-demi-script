@@ -1,4 +1,3 @@
-#from app.script.iosfa import get_localities_core
 import logging
 from app.script.css import ScriptCss
 from app.core.database import connect
