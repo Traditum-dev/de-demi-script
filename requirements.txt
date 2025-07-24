@@ -3,3 +3,4 @@ psycopg2-binary
 pytz==2023.3.post1
 pandas==2.2.2
 numpy==1.26.4
+unidecode
