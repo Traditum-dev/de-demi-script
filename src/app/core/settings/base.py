@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASSWORD: str
     DB_PORT: str
-
     CSS_PASSWORD_CORE: str
-    GCLOUD_BUCKET: str | None
     VERBOSE: str
+    FTP_USER: str | None
+    FTP_PASSW: str | None
+    BASE_FTP: str | None
 
     class Config:
         env_file = ".env"
