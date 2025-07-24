@@ -1,5 +1,5 @@
 import logging
-from app.script.css import ScriptCss
+from app.script.demi import ScriptDemi
 from app.core.database import connect
 from app.core import settings
 
@@ -7,7 +7,7 @@ if __name__ == "__main__":
     conn = connect()
     verbose=settings.VERBOSE
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
-    script = ScriptCss(connection=conn, verbose=verbose, gcloud=False)
+    script = ScriptDemi(connection=conn, verbose=verbose, ftp=True)
     #1: buscar los afifos en core
     #2: buscar los afifos en CSS
     #3: los afifos que estan en css pero no en core, cargar a core con todos sus datos
