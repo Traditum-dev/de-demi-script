@@ -354,11 +354,12 @@ class ScriptDemi:
 
     def update_rows(self, df: pd.DataFrame):
         cursor = self.connection.cursor()
+        print(f"Updating {len(df)} rows")
         try:
             for row in df.itertuples(index=True):
                 # Check persona data
                 #print(row)
-                print("updating persona")
+                #print("updating persona")
                 #row = dict(row)
                 persona_data = {
                     "nombre": row.NOMBRE if row.NOMBRE != row.nombre and row.nombre is not None and (row.NOMBRE is not None and len(row.NOMBRE) > 0) else row.nombre,
@@ -380,7 +381,7 @@ class ScriptDemi:
                 values = list(persona_data.values()) + [getattr(row, "id_persona", "")]
                 cursor.execute(update_persona_query, values)
 
-                print("updating persona documento")
+                #print("updating persona documento")
                 persona_documento_data = {
                     "valor": row.NUMERODOCUMENTO if row.NUMERODOCUMENTO != row.n_documento and row.NUMERODOCUMENTO is not None else row.n_documento,
                     "id_param_documento_identificatorio": row.TIPO_DOCUMENTO if row.TIPO_DOCUMENTO != row.id_param_documento_identificatorio and row.id_param_documento_identificatorio is not None else row.id_param_documento_identificatorio,
@@ -400,8 +401,8 @@ class ScriptDemi:
                 values = list(persona_documento_data.values()) + [getattr(row, "id_persona", "")]
                 cursor.execute(update_persona_documento_query, values)
 
-                print("updating afiliado")
-                print(row)
+                #print("updating afiliado")
+                #print(row)
                 codigo_titular = row.TITULAR_TARJETA if row.TITULAR_TARJETA != row.codigo_titular and row.TITULAR_TARJETA is not None else row.codigo_titular
 
                 if isinstance(codigo_titular, (int, float)) and (math.isnan(codigo_titular) or codigo_titular == ""):
@@ -416,7 +417,7 @@ class ScriptDemi:
                 id_titular_query = """
                     SELECT id FROM afiliado
                     WHERE codigo = %s
-                    AND id_financiadora = 'ec5b3f64-aaed-4024-959d-f77346f11a01'
+                    AND id_financiadora = '69633cef-cd44-4ce2-ae8c-3000b61c6849'
                 """
                 cursor.execute(id_titular_query, (codigo_titular,))
                 result = cursor.fetchone()
@@ -426,15 +427,15 @@ class ScriptDemi:
                     update_afiliado_query = """
                         UPDATE afiliado
                         SET id_afiliado_titular = %s
-                        WHERE codigo = %s
+                        WHERE id = %s
                     """
-                    cursor.execute(update_afiliado_query, (id_titular, codigo_titular))
+                    cursor.execute(update_afiliado_query, (id_titular, row.id_afi))
                 else:
                     print("No record found for the given codigo_titular.")
 
-                print("inserting into afiliado_plan")
+                #print("inserting into afiliado_plan")
                 if row.NOMBRE_PLAN_NEW != row.id_financiadora_plan:
-                    print("previous plan is deprecated, creating new status for old plan")
+                    #print("previous plan is deprecated, creating new status for old plan")
                     old_plan_status_id = str(uuid4())
                     buenos_aires_tz = pytz.timezone("America/Argentina/Buenos_Aires")
                     insert_afiliado_plan_estado_query = """
@@ -450,7 +451,7 @@ class ScriptDemi:
                             str(datetime.datetime.now(buenos_aires_tz).date())
                         )
                     )
-                    print("Inserting new plan and status entry")
+                    #print("Inserting new plan and status entry")
                     new_plan_id = str(uuid4())
                     insert_afiliado_plan_query = """
                     INSERT INTO afiliado_plan (id, id_afiliado, id_financiadora_plan)
