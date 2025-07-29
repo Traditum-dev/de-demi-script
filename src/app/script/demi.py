@@ -293,23 +293,23 @@ class ScriptDemi:
 
                     cursor.execute(persona_contacto_query, values_persona_contacto_telefono)
 
-                if getattr(row, "EMAIL", "") != "NULL":
-                    id_contacto_email = str(uuid4())
-
-                    values_contacto_email = (
-                        id_contacto_email,
-                        getattr(row, "EMAIL", ""),
-                        "{EMAIL}"
-                    )
-
-                    cursor.execute(contacto_query, values_contacto_email)
-
-                    values_persona_contacto_email = (
-                        id_persona,
-                        id_contacto_email
-                    )
-
-                    cursor.execute(persona_contacto_query, values_persona_contacto_email)
+                #if getattr(row, "EMAIL", "") != "NULL":
+                #    id_contacto_email = str(uuid4())
+#
+                #    values_contacto_email = (
+                #        id_contacto_email,
+                #        getattr(row, "EMAIL", ""),
+                #        "{EMAIL}"
+                #    )
+#
+                #    cursor.execute(contacto_query, values_contacto_email)
+#
+                #    values_persona_contacto_email = (
+                #        id_persona,
+                #        id_contacto_email
+                #    )
+#
+                #    cursor.execute(persona_contacto_query, values_persona_contacto_email)
                 ########################################################################################################
                 # afiliado plan
                 id_afiliado_plan = str(uuid4())
@@ -594,6 +594,7 @@ class ScriptDemi:
         cursor.close()
         df["id_loc_localidad"] = df["id_loc_localidad"].map(city_ids)
         df.drop(columns=["id_loc_estado"], inplace=True)
+        df.fillna("", inplace=True) # Reemplazados NaN con String vacío para Front CD Flutter
         return df
 
     def compare_rows(self, comparison_df):
@@ -635,7 +636,7 @@ class ScriptDemi:
     def compare_data(self, old_data, new_data):
         # encontrar los afis que faltan
         # estos hay que cargarlos de 0
-        missing_afis = new_data[~new_data["NUMEROTARJETA"].isin(old_data["codigo"].astype(int))]
+        missing_afis = new_data[~new_data["NUMEROTARJETA"].astype(str).isin(old_data["codigo"])] # Se convierte a string para que coincida con el tipo de datos de old_data
 
         if len (missing_afis) >0:
             print("missing afis, starting loading")
