@@ -1,4 +1,5 @@
 import datetime
+import io
 import math
 import sys
 import os
@@ -58,6 +59,15 @@ class ScriptDemi:
                 print("✅ FTP login successful!")
 
                 ftp.cwd("CredencialDigital")
+                ftp_file = io.BytesIO()
+
+                # Step 2: Download the file from FTP into the in-memory stream
+                # 'RETR' is the command to retrieve a file
+                # 'callback' argument writes chunks of data to ftp_file_content
+                ftp.retrbinary("RETR DEMISALUD-Afiliados.txt", ftp_file.write)
+
+                # Step 3: Reset the stream's position to the beginning
+                ftp_file.seek(0)
                 data = pd.read_csv("DEMISALUD-Afiliados.txt", encoding="latin-1", sep="|")
                 print(data.head())
                 ftp.quit()
