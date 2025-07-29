@@ -4,3 +4,4 @@
 .python-version
 *.csv
 __pycache__/
+*.txt
