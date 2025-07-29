@@ -497,7 +497,7 @@ class ScriptDemi:
             "DEMI OP - OBLIG- SM": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
             "DEMI OP - OBLIG- ROS": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
             "DEMI OP - VOL- SM": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
-            "DEMI-COSEGURO A CARGO SOCIO 30,00%": "76b509c7-f221-4416-a6bb-8c26d44677d2",
+            "DEMI-COSEGURO A CARGO SOCIO 30,00%": "5f322351-b6a9-4976-902a-a05f75779944",
             "VITALICIO": "5f322351-b6a9-4976-902a-a05f75779944",
             "VERDE - OBLIGATORIO": "7aec8bd7-22cf-42e0-84a9-2d0e6637a388",
             "PLAN BASICO" : "5f322351-b6a9-4976-902a-a05f75779944",
@@ -633,6 +633,7 @@ class ScriptDemi:
         return data_new, data_old
 
     def compare_data(self, old_data, new_data):
+
         # encontrar los afis que faltan
         # estos hay que cargarlos de 0
         missing_afis = new_data[~new_data["NUMEROTARJETA"].isin(old_data["codigo"].astype(int))]
