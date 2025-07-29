@@ -605,7 +605,7 @@ class ScriptDemi:
                 comparison_df["TIPO_DOCUMENTO"]
                 != comparison_df["id_param_documento_identificatorio"]
             )
-            | (comparison_df["NUMERODOCUMENTO"] != comparison_df["n_documento"])
+            | (comparison_df["NUMERODOCUMENTO"].astype(str) != comparison_df["n_documento"])
             | (comparison_df["FECHA_NACIMIENTO"] != comparison_df["fecha_nacimiento"])
             | (comparison_df["TITULAR_TARJETA"] != comparison_df["codigo_titular"])
             | (comparison_df["NOMBRE_PLAN_NEW"]) != comparison_df["id_financiadora_plan"]
