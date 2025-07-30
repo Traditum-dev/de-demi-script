@@ -61,12 +61,8 @@ class ScriptDemi:
                 ftp.cwd("CredencialDigital")
                 ftp_file = io.BytesIO()
 
-                # Step 2: Download the file from FTP into the in-memory stream
-                # 'RETR' is the command to retrieve a file
-                # 'callback' argument writes chunks of data to ftp_file_content
                 ftp.retrbinary("RETR DEMISALUD-Afiliados.txt", ftp_file.write)
 
-                # Step 3: Reset the stream's position to the beginning
                 ftp_file.seek(0)
                 data = pd.read_csv("DEMISALUD-Afiliados.txt", encoding="latin-1", sep="|")
                 print(data.head())
@@ -334,6 +330,7 @@ class ScriptDemi:
                     afiliado_plan_query,
                     (id_afiliado_plan, id_afiliado, id_financiadora_plan_new),
                 )
+                plan_estado = "ACTIVO" if getattr(row, "MOROSO", "") =="NO" else "MOROSO"
                 insert_afiliado_plan_estado = """
                 INSERT INTO afiliado_plan_estado (id, id_afiliado_plan, estado, fecha_desde)
                 VALUES (%s, %s, %s, %s)
@@ -346,7 +343,7 @@ class ScriptDemi:
                     (
                         id_afiliado_plan_estado,
                         id_afiliado_plan,
-                        "ACTIVO",
+                        plan_estado,
                         str(datetime.datetime.now(buenos_aires_tz).date()),
                     ),
                 )
@@ -476,6 +473,7 @@ class ScriptDemi:
                         )
                     )
                     new_plan_status_id = str(uuid4())
+                    plan_estado = "ACTIVO" if row.MOROSO =="NO" else "MOROSO"
                     insert_afiliado_plan_estado_query = """
                     INSERT INTO afiliado_plan_estado (id, id_afiliado_plan, estado, fecha_desde)
                     VALUES (%s, %s, %s, %s)
@@ -485,7 +483,7 @@ class ScriptDemi:
                         (
                             new_plan_status_id,
                             new_plan_id,
-                            "ACTIVO",
+                            plan_estado,
                             str(datetime.datetime.now(buenos_aires_tz).date())
                         )
                     )
