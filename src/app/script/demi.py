@@ -61,7 +61,7 @@ class ScriptDemi:
                 ftp.cwd("CredencialDigital")
                 ftp_file = io.BytesIO()
 
-                ftp.retrbinary("DEMISALUD-Afiliados.txt", ftp_file.write)
+                ftp.retrbinary("RETR DEMISALUD-Afiliados.txt", ftp_file.write)
 
                 ftp_file.seek(0)
                 data = pd.read_csv(ftp_file, encoding="latin-1", sep="|")
