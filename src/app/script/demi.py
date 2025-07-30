@@ -124,37 +124,60 @@ class ScriptDemi:
         """
         print("Querying data from core...")
         logging.info("Querying data from core...")
-        query = """SELECT
-        afiliado.id AS id_afi,
-        afiliado_plan.id AS id_afiliado_plan,
-        id_afiliado_titular,
-        persona.id AS id_persona,
-        codigo,
-        persona.nombre,
-        apellido,
-        genero_biologico,
-        fecha_nacimiento,
-        afiliado_parentezco_tipo.tipo AS tipo_parentezco,
-        persona_documento.id_param_documento_identificatorio,
-        persona_documento.valor AS n_documento,
-        param_documento_identificatorio.tipo AS tipo_doc,
-        contacto.tipo AS tipo_contacto,
-        financiadora_plan.nombre AS nombre_plan,
-        financiadora_plan.id AS id_financiadora_plan
-
-        FROM afiliado
-        LEFT JOIN persona ON persona.id = afiliado.id_persona
-        LEFT JOIN persona_documento ON persona_documento.id_persona = persona.id
-        LEFT JOIN param_documento_identificatorio ON param_documento_identificatorio.id = persona_documento.id_param_documento_identificatorio
-        LEFT JOIN persona_contacto ON persona_contacto.id_persona = persona.id
-        LEFT JOIN contacto ON contacto.id = persona_contacto.id_contacto
-        LEFT JOIN persona_domicilio ON persona_domicilio.id_persona = persona.id
-		LEFT JOIN domicilio ON domicilio.id = persona_domicilio.id_domicilio
-        LEFT JOIN afiliado_parentezco_tipo ON afiliado_parentezco_tipo.id = afiliado.id_afiliado_parentezco_tipo
-        LEFT JOIN afiliado_plan ON afiliado_plan.id_afiliado = afiliado.id
-        LEFT JOIN financiadora_plan ON financiadora_plan.id = afiliado_plan.id_financiadora_plan
-        WHERE afiliado.id_financiadora = '69633cef-cd44-4ce2-ae8c-3000b61c6849'
-        """
+        query = """WITH RankedPlans AS (
+            SELECT
+                afiliado.id AS id_afi,
+                afiliado_plan.id AS id_afiliado_plan,
+                id_afiliado_titular,
+                persona.id AS id_persona,
+                codigo,
+                persona.nombre,
+                apellido,
+                genero_biologico,
+                fecha_nacimiento,
+                afiliado_parentezco_tipo.tipo AS tipo_parentezco,
+                persona_documento.id_param_documento_identificatorio,
+                persona_documento.valor AS n_documento,
+                param_documento_identificatorio.tipo AS tipo_doc,
+                contacto.tipo AS tipo_contacto,
+                financiadora_plan.nombre AS nombre_plan,
+                financiadora_plan.id AS id_financiadora_plan,
+                ROW_NUMBER() OVER(
+                    PARTITION BY afiliado.id 
+                    ORDER BY afiliado_plan.created_at DESC NULLS LAST
+                ) as rn
+            FROM afiliado
+            LEFT JOIN persona ON persona.id = afiliado.id_persona
+            LEFT JOIN persona_documento ON persona_documento.id_persona = persona.id
+            LEFT JOIN param_documento_identificatorio ON param_documento_identificatorio.id = persona_documento.id_param_documento_identificatorio
+            LEFT JOIN persona_contacto ON persona_contacto.id_persona = persona.id
+            LEFT JOIN contacto ON contacto.id = persona_contacto.id_contacto
+            LEFT JOIN persona_domicilio ON persona_domicilio.id_persona = persona.id
+            LEFT JOIN domicilio ON domicilio.id = persona_domicilio.id_domicilio
+            LEFT JOIN afiliado_parentezco_tipo ON afiliado_parentezco_tipo.id = afiliado.id_afiliado_parentezco_tipo
+            LEFT JOIN afiliado_plan ON afiliado_plan.id_afiliado = afiliado.id
+            LEFT JOIN financiadora_plan ON financiadora_plan.id = afiliado_plan.id_financiadora_plan
+            WHERE afiliado.id_financiadora = '69633cef-cd44-4ce2-ae8c-3000b61c6849'
+        )
+        SELECT 
+            id_afi,
+            id_afiliado_plan,
+            id_afiliado_titular,
+            id_persona,
+            codigo,
+            nombre,
+            apellido,
+            genero_biologico,
+            fecha_nacimiento,
+            tipo_parentezco,
+            id_param_documento_identificatorio,
+            n_documento,
+            tipo_doc,
+            tipo_contacto,
+            nombre_plan,
+            id_financiadora_plan
+        FROM RankedPlans
+        WHERE rn = 1"""
         df = pd.read_sql(query, con=self.connection)
         return df
 
