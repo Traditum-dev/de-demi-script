@@ -158,26 +158,38 @@ class ScriptDemi:
             LEFT JOIN afiliado_plan ON afiliado_plan.id_afiliado = afiliado.id
             LEFT JOIN financiadora_plan ON financiadora_plan.id = afiliado_plan.id_financiadora_plan
             WHERE afiliado.id_financiadora = '69633cef-cd44-4ce2-ae8c-3000b61c6849'
+        ), RankedPlanEstados AS (
+            SELECT 
+                afiliado_plan.id AS id_afiliado_plan,
+                afiliado_plan_estado.estado,
+                ROW_NUMBER() OVER(
+                    PARTITION BY afiliado_plan.id 
+                    ORDER BY afiliado_plan_estado.fecha_desde DESC
+                ) as rn_estado
+            FROM afiliado_plan
+            LEFT JOIN afiliado_plan_estado ON afiliado_plan_estado.id_afiliado_plan = afiliado_plan.id
         )
         SELECT 
-            id_afi,
-            id_afiliado_plan,
-            id_afiliado_titular,
-            id_persona,
-            codigo,
-            nombre,
-            apellido,
-            genero_biologico,
-            fecha_nacimiento,
-            tipo_parentezco,
-            id_param_documento_identificatorio,
-            n_documento,
-            tipo_doc,
-            tipo_contacto,
-            nombre_plan,
-            id_financiadora_plan
-        FROM RankedPlans
-        WHERE rn = 1"""
+            rp.id_afi,
+            rp.id_afiliado_plan,
+            rp.id_afiliado_titular,
+            rp.id_persona,
+            rp.codigo,
+            rp.nombre,
+            rp.apellido,
+            rp.genero_biologico,
+            rp.fecha_nacimiento,
+            rp.tipo_parentezco,
+            rp.id_param_documento_identificatorio,
+            rp.n_documento,
+            rp.tipo_doc,
+            rp.tipo_contacto,
+            rp.nombre_plan,
+            rp.id_financiadora_plan,
+            COALESCE(rpe.estado, 'ACTIVO') as estado_actual
+        FROM RankedPlans rp
+        LEFT JOIN RankedPlanEstados rpe ON rpe.id_afiliado_plan = rp.id_afiliado_plan AND rpe.rn_estado = 1
+        WHERE rp.rn = 1"""
         df = pd.read_sql(query, con=self.connection)
         return df
 
@@ -186,6 +198,8 @@ class ScriptDemi:
 
     def insert_missing_afiliados(self, missing_df: pd.DataFrame):
         cursor = self.connection.cursor()
+        # Asegurar que todos los NaN sean strings vacíos antes del insert
+        missing_df.fillna("", inplace=True)
         try:
             for row in missing_df.itertuples(index=False):
                 ########################################################################################################
@@ -384,6 +398,8 @@ class ScriptDemi:
 
     def update_rows(self, df: pd.DataFrame):
         cursor = self.connection.cursor()
+        # Asegurar que todos los NaN sean strings vacíos antes del update
+        # df.fillna("", inplace=True)
         print(f"Updating {len(df)} rows")
         try:
             for row in df.itertuples(index=True):
@@ -464,10 +480,12 @@ class ScriptDemi:
                     print("No record found for the given codigo_titular.")
 
                 #print("inserting into afiliado_plan")
+                buenos_aires_tz = pytz.timezone("America/Argentina/Buenos_Aires")
+                plan_estado_esperado = "ACTIVO" if row.MOROSO == "NO" else "MOROSO"
+                
                 if row.NOMBRE_PLAN_NEW != row.id_financiadora_plan:
                     #print("previous plan is deprecated, creating new status for old plan")
                     old_plan_status_id = str(uuid4())
-                    buenos_aires_tz = pytz.timezone("America/Argentina/Buenos_Aires")
                     insert_afiliado_plan_estado_query = """
                     INSERT INTO afiliado_plan_estado (id, id_afiliado_plan, estado, fecha_desde)
                     VALUES (%s, %s, %s, %s)
@@ -496,7 +514,6 @@ class ScriptDemi:
                         )
                     )
                     new_plan_status_id = str(uuid4())
-                    plan_estado = "ACTIVO" if row.MOROSO =="NO" else "MOROSO"
                     insert_afiliado_plan_estado_query = """
                     INSERT INTO afiliado_plan_estado (id, id_afiliado_plan, estado, fecha_desde)
                     VALUES (%s, %s, %s, %s)
@@ -506,7 +523,23 @@ class ScriptDemi:
                         (
                             new_plan_status_id,
                             new_plan_id,
-                            plan_estado,
+                            plan_estado_esperado,
+                            str(datetime.datetime.now(buenos_aires_tz).date())
+                        )
+                    )
+                elif plan_estado_esperado != row.estado_actual:
+                    #print("Plan unchanged but status different, updating status")
+                    new_status_id = str(uuid4())
+                    insert_afiliado_plan_estado_query = """
+                    INSERT INTO afiliado_plan_estado (id, id_afiliado_plan, estado, fecha_desde)
+                    VALUES (%s, %s, %s, %s)
+                    """
+                    cursor.execute(
+                        insert_afiliado_plan_estado_query,
+                        (
+                            new_status_id,
+                            row.id_afiliado_plan,
+                            plan_estado_esperado,
                             str(datetime.datetime.now(buenos_aires_tz).date())
                         )
                     )
@@ -630,6 +663,11 @@ class ScriptDemi:
         return df
 
     def compare_rows(self, comparison_df):
+        # Crear columna de estado esperado basado en MOROSO
+        comparison_df["estado_esperado"] = comparison_df["MOROSO"].apply(
+            lambda x: "ACTIVO" if x == "NO" else "MOROSO"
+        )
+        
         column_comparisons = (
             (comparison_df["NOMBRE"] != comparison_df["nombre"])
             | (comparison_df["APELLIDO"] != comparison_df["apellido"])
@@ -641,6 +679,7 @@ class ScriptDemi:
             | (comparison_df["FECHA_NACIMIENTO"] != comparison_df["fecha_nacimiento"])
             | (comparison_df["TITULAR_TARJETA"] != comparison_df["codigo_titular"])
             | (comparison_df["NOMBRE_PLAN_NEW"] != comparison_df["id_financiadora_plan"])
+            | (comparison_df["estado_esperado"] != comparison_df["estado_actual"])
         )
 
         afis_to_update = comparison_df[column_comparisons]["codigo"].astype(str)
@@ -684,6 +723,8 @@ class ScriptDemi:
         existing_afis_standard, old_data = self.add_titular_data(
             old_data, existing_afis_standard
         )
+        # Asegurar que los datos viejos también tengan strings vacíos en lugar de NaN/None
+        
         comparison_df = existing_afis_standard.merge(
             old_data,
             left_on="NUMEROTARJETA",
