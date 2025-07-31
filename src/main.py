@@ -7,7 +7,7 @@ if __name__ == "__main__":
     conn = connect()
     verbose=settings.VERBOSE
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
-    script = ScriptDemi(connection=conn, verbose=verbose, ftp=False)
+    script = ScriptDemi(connection=conn, verbose=verbose, ftp=True)
     #1: buscar los afifos en core
     #2: buscar los afifos en CSS
     #3: los afifos que estan en css pero no en core, cargar a core con todos sus datos
