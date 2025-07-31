@@ -145,7 +145,9 @@ class ScriptDemi:
                 domicilio.numeracion,
                 domicilio.piso,
                 domicilio.departamento,
+                contacto.id AS id_contacto,
                 contacto.tipo AS tipo_contacto,
+                contacto.valor AS telefono,
                 financiadora_plan.nombre AS nombre_plan,
                 financiadora_plan.id AS id_financiadora_plan,
                 ROW_NUMBER() OVER(
@@ -190,6 +192,8 @@ class ScriptDemi:
             rp.n_documento,
             rp.tipo_doc,
             rp.tipo_contacto,
+            rp.id_contacto,
+            rp.telefono,
             rp.codigo_postal,
             rp.calle,
             rp.numeracion,
@@ -524,7 +528,16 @@ class ScriptDemi:
                 }
                 values = list(domicilio_data.values()) + [getattr(row, "id_persona", "")]
                 cursor.execute(update_domicilio_query, values)
+                ########################################################################################################
+                #persona contacto, solo telefono en demi
 
+                update_contacto_query = """UPDATE contacto SET valor = %s WHERE contacto.id = %s"""
+                telefono_data = {
+                    "valor": row.TELEFONO if row.TELEFONO != "NaN" else ""
+                }
+
+                values = list(telefono_data.values()) + [getattr(row, "id_contacto", "")]
+                cursor.execute(update_contacto_query, values)
                 #print("inserting into afiliado_plan")
                 buenos_aires_tz = pytz.timezone("America/Argentina/Buenos_Aires")
                 plan_estado_esperado = "ACTIVO" if row.MOROSO == "NO" else "MOROSO"
@@ -735,6 +748,8 @@ class ScriptDemi:
             | (comparison_df["NUMERO"] != comparison_df["numeracion"])
             | (comparison_df["PISO"] != comparison_df["piso"])
             | (comparison_df["DEPARTAMENTO"] != comparison_df["departamento"])
+            | (comparison_df["TELEFONO"] != comparison_df["telefono"])
+
         )
 
         afis_to_update = comparison_df[column_comparisons]["codigo"].astype(str)
