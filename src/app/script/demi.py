@@ -65,6 +65,7 @@ class ScriptDemi:
 
                 ftp_file.seek(0)
                 data = pd.read_csv(ftp_file, encoding="latin-1", sep="|")
+                #data.to_csv("download_ftp.csv")
                 print(data.head())
                 ftp.quit()
                 print("FTP connection closed.")
@@ -139,6 +140,11 @@ class ScriptDemi:
                 persona_documento.id_param_documento_identificatorio,
                 persona_documento.valor AS n_documento,
                 param_documento_identificatorio.tipo AS tipo_doc,
+                domicilio.codigo_postal,
+                domicilio.calle,
+                domicilio.numeracion,
+                domicilio.piso,
+                domicilio.departamento,
                 contacto.tipo AS tipo_contacto,
                 financiadora_plan.nombre AS nombre_plan,
                 financiadora_plan.id AS id_financiadora_plan,
@@ -184,6 +190,11 @@ class ScriptDemi:
             rp.n_documento,
             rp.tipo_doc,
             rp.tipo_contacto,
+            rp.codigo_postal,
+            rp.calle,
+            rp.numeracion,
+            rp.piso,
+            rp.departamento,
             rp.nombre_plan,
             rp.id_financiadora_plan,
             COALESCE(rpe.estado, 'ACTIVO') as estado_actual
@@ -479,6 +490,8 @@ class ScriptDemi:
                 else:
                     print("No record found for the given codigo_titular.")
 
+                ########################################################################################################
+                # domicilio
                 update_domicilio_query="""
                     UPDATE domicilio
                     SET
@@ -624,7 +637,7 @@ class ScriptDemi:
                 axis=1
             )
         df["id_loc_estado"] = df["PROVINCIA"].apply(
-            lambda x: unidecode(x).lower()
+            lambda x: unidecode(str(x)).lower()
         )
 
         state_names = list(df["id_loc_estado"].unique())
@@ -675,6 +688,7 @@ class ScriptDemi:
         df["id_loc_localidad"] = df["LOCALIDAD"].replace(
             city_replacements, regex=True
         )
+
         unique_cities = set(
             zip(df["id_loc_localidad"], df["id_loc_estado"])
         )
@@ -682,6 +696,7 @@ class ScriptDemi:
         city_ids = {}
         cursor = self.connection.cursor()
         for city_name, state_name in unique_cities:
+
             cursor.execute(
                 f"SELECT id FROM loc_localidad WHERE LOWER(nombre) LIKE '{city_name.lower()}' AND id_loc_estado = '{state_name}' AND id_financiadora IS NULL"
             )
@@ -692,6 +707,7 @@ class ScriptDemi:
                 city_ids[city_name] = None
         cursor.close()
         df["id_loc_localidad"] = df["id_loc_localidad"].map(city_ids)
+        df["CODIGO_POSTAL"] = df["CODIGO_POSTAL"].astype(str)
         df.drop(columns=["id_loc_estado"], inplace=True)
         df.fillna("", inplace=True) # Reemplazados NaN con String vacío para Front CD Flutter
         return df
@@ -714,6 +730,11 @@ class ScriptDemi:
             | (comparison_df["TITULAR_TARJETA"] != comparison_df["codigo_titular"])
             | (comparison_df["NOMBRE_PLAN_NEW"] != comparison_df["id_financiadora_plan"])
             | (comparison_df["estado_esperado"] != comparison_df["estado_actual"])
+            | (comparison_df["CODIGO_POSTAL"] != comparison_df["codigo_postal"])
+            | (comparison_df["CALLE"] != comparison_df["calle"])
+            | (comparison_df["NUMERO"] != comparison_df["numeracion"])
+            | (comparison_df["PISO"] != comparison_df["piso"])
+            | (comparison_df["DEPARTAMENTO"] != comparison_df["departamento"])
         )
 
         afis_to_update = comparison_df[column_comparisons]["codigo"].astype(str)
@@ -766,7 +787,7 @@ class ScriptDemi:
             how="left",
             suffixes=("_new", "_old"),
         )
-
+        comparison_df.to_csv("comparison.csv")
         afis_to_update = self.compare_rows(comparison_df)
         comparison_df["codigo"] = comparison_df["codigo"].astype(str)
         update_data =comparison_df[comparison_df["codigo"].isin(afis_to_update)]
