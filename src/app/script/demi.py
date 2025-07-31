@@ -143,7 +143,7 @@ class ScriptDemi:
                 financiadora_plan.nombre AS nombre_plan,
                 financiadora_plan.id AS id_financiadora_plan,
                 ROW_NUMBER() OVER(
-                    PARTITION BY afiliado.id 
+                    PARTITION BY afiliado.id
                     ORDER BY afiliado_plan.created_at DESC NULLS LAST
                 ) as rn
             FROM afiliado
@@ -159,17 +159,17 @@ class ScriptDemi:
             LEFT JOIN financiadora_plan ON financiadora_plan.id = afiliado_plan.id_financiadora_plan
             WHERE afiliado.id_financiadora = '69633cef-cd44-4ce2-ae8c-3000b61c6849'
         ), RankedPlanEstados AS (
-            SELECT 
+            SELECT
                 afiliado_plan.id AS id_afiliado_plan,
                 afiliado_plan_estado.estado,
                 ROW_NUMBER() OVER(
-                    PARTITION BY afiliado_plan.id 
+                    PARTITION BY afiliado_plan.id
                     ORDER BY afiliado_plan_estado.fecha_desde DESC
                 ) as rn_estado
             FROM afiliado_plan
             LEFT JOIN afiliado_plan_estado ON afiliado_plan_estado.id_afiliado_plan = afiliado_plan.id
         )
-        SELECT 
+        SELECT
             rp.id_afi,
             rp.id_afiliado_plan,
             rp.id_afiliado_titular,
@@ -479,10 +479,43 @@ class ScriptDemi:
                 else:
                     print("No record found for the given codigo_titular.")
 
+                update_domicilio_query="""
+                    UPDATE domicilio
+                    SET
+                    codigo_postal = %s,
+                    calle = %s,
+                    numeracion = %s,
+                    piso = %s,
+                    departamento = %s,
+                    descripcion = %s,
+                    id_loc_localidad = %s
+                    WHERE
+                    domicilio.id = (
+                                SELECT
+                                persona_domicilio.id_domicilio
+                                FROM
+                                persona_domicilio
+                                WHERE
+                                persona_domicilio.id_persona = %s
+                                )
+                """
+
+                domicilio_data = {
+                    "codigo_postal": row.CODIGO_POSTAL if row.CODIGO_POSTAL != "NaN" else "",
+                    "calle":row.CALLE if row.CALLE != "NaN" else "",
+                    "numeracion":row.NUMERO if row.NUMERO != "NaN" else "",
+                    "piso":row.PISO if row.PISO != "NaN" else "",
+                    "departamento":row.DEPARTAMENTO if row.DEPARTAMENTO != "NaN" else "",
+                    "descripcion":"",
+                    "id_loc_localidad":row.id_loc_localidad
+                }
+                values = list(domicilio_data.values()) + [getattr(row, "id_persona", "")]
+                cursor.execute(update_domicilio_query, values)
+
                 #print("inserting into afiliado_plan")
                 buenos_aires_tz = pytz.timezone("America/Argentina/Buenos_Aires")
                 plan_estado_esperado = "ACTIVO" if row.MOROSO == "NO" else "MOROSO"
-                
+
                 if row.NOMBRE_PLAN_NEW != row.id_financiadora_plan:
                     #print("previous plan is deprecated, creating new status for old plan")
                     old_plan_status_id = str(uuid4())
@@ -543,6 +576,7 @@ class ScriptDemi:
                             str(datetime.datetime.now(buenos_aires_tz).date())
                         )
                     )
+
             self.connection.commit()
 
         except Exception as e:
@@ -667,7 +701,7 @@ class ScriptDemi:
         comparison_df["estado_esperado"] = comparison_df["MOROSO"].apply(
             lambda x: "ACTIVO" if x == "NO" else "MOROSO"
         )
-        
+
         column_comparisons = (
             (comparison_df["NOMBRE"] != comparison_df["nombre"])
             | (comparison_df["APELLIDO"] != comparison_df["apellido"])
@@ -724,7 +758,7 @@ class ScriptDemi:
             old_data, existing_afis_standard
         )
         # Asegurar que los datos viejos también tengan strings vacíos en lugar de NaN/None
-        
+
         comparison_df = existing_afis_standard.merge(
             old_data,
             left_on="NUMEROTARJETA",
