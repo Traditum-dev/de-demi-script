@@ -65,8 +65,6 @@ class ScriptDemi:
 
                 ftp_file.seek(0)
                 data = pd.read_csv(ftp_file, encoding="latin-1", sep="|")
-                #data.to_csv("download_ftp.csv")
-                print(data.head())
                 ftp.quit()
                 print("FTP connection closed.")
             except Exception as e:
@@ -463,7 +461,6 @@ class ScriptDemi:
                 cursor.execute(update_persona_documento_query, values)
 
                 #print("updating afiliado")
-                #print(row)
                 codigo_titular = row.TITULAR_TARJETA if row.TITULAR_TARJETA != row.codigo_titular and row.TITULAR_TARJETA is not None else row.codigo_titular
 
                 if isinstance(codigo_titular, (int, float)) and (math.isnan(codigo_titular) or codigo_titular == ""):
@@ -802,7 +799,6 @@ class ScriptDemi:
             how="left",
             suffixes=("_new", "_old"),
         )
-        comparison_df.to_csv("comparison.csv")
         afis_to_update = self.compare_rows(comparison_df)
         comparison_df["codigo"] = comparison_df["codigo"].astype(str)
         update_data =comparison_df[comparison_df["codigo"].isin(afis_to_update)]
