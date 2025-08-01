@@ -65,6 +65,7 @@ class ScriptDemi:
 
                 ftp_file.seek(0)
                 data = pd.read_csv(ftp_file, encoding="latin-1", sep="|")
+                #data.to_csv("DEMISALUD-Afiliados-prod.txt")
                 ftp.quit()
                 print("FTP connection closed.")
             except Exception as e:
@@ -615,12 +616,12 @@ class ScriptDemi:
             "AZUL PLUS-VOL-ROS": "b60f55eb-c083-416e-a7fa-70657ba4ab81",
             "AZUL PLUS-OBL-ROS": "b60f55eb-c083-416e-a7fa-70657ba4ab81",
             "AZUL PLUS- OBLIG-SM": "b60f55eb-c083-416e-a7fa-70657ba4ab81",
-            "AZUL-COSEGURO A CARGO SOCIO 20,00%":"96b8c983-7724-414e-88e5-3427d7f43b0a",
+            "AZUL-COSEGURO A CARGO SOCIO 20,00%":"8c86723a-f71a-4eae-8e79-650fe88a6504",
             "DEMI OP - OBLIG- SM": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
             "DEMI OP - OBLIG- ROS": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
             "DEMI OP - VOL- SM": "a9064b7f-d422-4eac-9eec-e8946f7990aa",
-            "DEMI-COSEGURO A CARGO SOCIO 30,00%": "5f322351-b6a9-4976-902a-a05f75779944",
-            "VITALICIO": "5f322351-b6a9-4976-902a-a05f75779944",
+            "DEMI-COSEGURO (SOLO PRACTICAS) 30%\xa0A\xa0CARGO\xa0SOCIO": "e485fb3a-df3f-430a-8389-32cf3f83a783",
+            "VITALICIO": "e0c71154-a805-49e2-bc8b-253be83cf179",
             "VERDE - OBLIGATORIO": "7aec8bd7-22cf-42e0-84a9-2d0e6637a388",
             "PLAN BASICO" : "5f322351-b6a9-4976-902a-a05f75779944",
             "DS 1000": "a1896f07-e202-4c89-be5e-24de5b174014"
@@ -756,7 +757,7 @@ class ScriptDemi:
         return afis_to_update
 
     def add_titular_data(self, data_old: pd.DataFrame, data_new: pd.DataFrame):
-        print("flaco")
+        # print("flaco")
         codigo_map = dict(zip(data_old["id_afi"], data_old["codigo"]))
         nombre_map = dict(zip(data_old["id_afi"], data_old["nombre"]))
 
